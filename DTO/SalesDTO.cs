@@ -13,5 +13,7 @@ namespace SalesConsoleApp.DTO
     {
         public DateTime? Date { get; set; }
         public decimal? Amount { get; set; }
+        // For scenarios where a row in the csv file, consists more columns/fields
+        public string? Redundant { get; set; }
     }
 }

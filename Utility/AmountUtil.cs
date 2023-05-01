@@ -74,7 +74,7 @@ namespace SalesConsoleApp.Utility
             regx = regx.Replace("{currenySymbol}", string.Empty)
                 .Replace("{thousandsComma}", ",")
                 .Replace("{decimalPointSeparator}", ".")
-                .Replace("{decPoints}", "1,4");
+                .Replace("{decPoints}", string.Format("1,{0}", AMOUNT_DECIMAL_POINTS_MAX));
 
             var isValidCurency = Regex.IsMatch(amountString, regx);
 
@@ -99,6 +99,10 @@ namespace SalesConsoleApp.Utility
                     amount = amount.Replace(",", ".");
                 }
                 else if (amountFormat.Equals(AMOUNT_FORMAT))
+                {
+                    amount = amount.Replace(",", string.Empty);
+                }
+                else if (amountFormat.Equals(AMOUNT_FORMAT3))
                 {
                     amount = amount.Replace(",", string.Empty);
                 }

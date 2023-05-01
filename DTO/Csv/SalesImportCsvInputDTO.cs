@@ -9,7 +9,7 @@ namespace SalesConsoleApp.DTO.Csv
 {
     internal class SalesImportCsvInputDTO
     {
-        public string FilesPath { get; set; }
+        public string? FilesPath { get; set; }
         public DateDTO Date { get; set; }
         public AmountFormatDTO AmountFormat { get; set; }
     }

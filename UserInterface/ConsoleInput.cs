@@ -17,6 +17,13 @@ namespace SalesConsoleApp.UserInterface
         {
             SalesImportCsvInputDTO result = new SalesImportCsvInputDTO();
 
+            string? inputFolderPath = null;
+            Console.WriteLine("Please specify the folder for the .CSV files(s):");
+            Console.WriteLine("Note: if no path is specified, default [/ImportFiles] path will be used");
+            inputFolderPath = Console.ReadLine();
+
+            result.FilesPath = !string.IsNullOrWhiteSpace(inputFolderPath) ? inputFolderPath : null;
+
             string? dateFormat = null;
             while (!IsDateFormatValid(dateFormat))
             {
@@ -60,7 +67,7 @@ namespace SalesConsoleApp.UserInterface
             int amountFormatInt = Int32.Parse(amountFormat, NumberStyles.Integer);
             int currencySymbolInt = Int32.Parse(includeCurrencySign, NumberStyles.Integer);
 
-            result.AmountFormat = new AmountFormatDTO() 
+            result.AmountFormat = new AmountFormatDTO()
             {
                 Format = (AmountFormatEnum?)amountFormatInt,
                 CurrencySymbol = (AmountCurrencyFormatEnum?)currencySymbolInt
@@ -73,8 +80,8 @@ namespace SalesConsoleApp.UserInterface
 
                 while (!IsAmountDecimalPointsFormatValid(numberOfDecimalPoints))
                 {
-                    Console.WriteLine("Please specify the number of decimal points of the Amount Format as per the import CSV file(s):");
-                    Console.WriteLine("");
+                    Console.WriteLine("Please specify the max number of decimal points of the Amount Format as per the import CSV file(s):");
+                    Console.WriteLine(string.Format("Note: Max number of allowed decimal points is: {0}", AmountUtil.AMOUNT_DECIMAL_POINTS_MAX));
 
                     numberOfDecimalPoints = Console.ReadLine();
                 }

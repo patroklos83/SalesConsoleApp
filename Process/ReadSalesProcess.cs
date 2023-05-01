@@ -17,17 +17,18 @@ namespace SalesConsoleApp.Process
 {
     internal class ReadSalesProcess
     {
-        //internal static string AmountFormat = AmountUtil.AMOUNT_FORMAT;
+        internal const string FILES_PATH = "./ImportFiles";
+
         internal static string DateFormat = DateTimeUtil.DATE_FORMAT;
 
         internal static AmountFormatDTO AmountFormat = new AmountFormatDTO
         {
             StrAmountFormat = AmountUtil.AMOUNT_FORMAT,
             CurrencySymbol = AmountCurrencyFormatEnum.None,
-            NumberOfDecimalPoints = 2
+            NumberOfDecimalPoints = AmountUtil.AMOUNT_DECIMAL_POINTS_MAX
         };
 
-        internal static void ExecuteProcess(SalesImportCsvInputDTO input)
+        internal static SalesImportCsvResultDTO ExecuteProcess(SalesImportCsvInputDTO input)
         {
             DateFormat = DateTimeUtil.GetDateFormatByDateFormatEnum(input.Date.DateFormat.Value);
             AmountFormat.Format = input.AmountFormat.Format;
@@ -35,37 +36,30 @@ namespace SalesConsoleApp.Process
             AmountFormat.CurrencySymbol = input.AmountFormat.CurrencySymbol;
             AmountFormat.NumberOfDecimalPoints = input.AmountFormat.NumberOfDecimalPoints;
 
+            string amountFormat = string.Format("{0}{1} [Max decimal points: {2}]",
+                AmountFormat.CurrencySymbol.HasValue && AmountFormat.CurrencySymbol != AmountCurrencyFormatEnum.None ? AmountFormat.CurrencySymbol.GetDescription() : string.Empty,
+                AmountFormat.StrAmountFormat,
+                AmountFormat.NumberOfDecimalPoints);
 
             Console.WriteLine();
             Console.WriteLine("Proceeding with formats");
             Console.WriteLine("---------------------------------------------------");
             Console.WriteLine(string.Format("Date Format: {0}", DateFormat));
-            Console.WriteLine(string.Format("Amount Format: {0}", AmountFormat.StrAmountFormat));
+            Console.WriteLine(string.Format("Amount Format: {0}", amountFormat));
             Console.WriteLine();
+
+            string path = string.IsNullOrEmpty(input.FilesPath) ? FILES_PATH : input.FilesPath;
+
+            Console.WriteLine(string.Format("CSV Import File(s) path: [{0}]", path));
+            Console.WriteLine("");
 
             var watch = System.Diagnostics.Stopwatch.StartNew();
-            var salesImportCsvResultDTO = ReadImportFiles(input.FilesPath);
+            var salesImportCsvResultDTO = ReadImportFiles(path);
             watch.Stop();
 
-
-            Console.WriteLine();
-            Console.WriteLine("Results");
-            Console.WriteLine("---------------------------------------------------");
-            Console.WriteLine();
             Console.WriteLine($"Total Execution Time: {watch.ElapsedMilliseconds} ms");
 
-            decimal sumOfDerivationAverage = salesImportCsvResultDTO.sumd / salesImportCsvResultDTO.count;
-            decimal average = salesImportCsvResultDTO.sum / salesImportCsvResultDTO.count;
-            var result = Math.Sqrt((double)(sumOfDerivationAverage - (average * average)));
-            Console.WriteLine("Standard Deviation = {0}", result);
-
-
-            double standard_deviation = standardDeviation(salesImportCsvResultDTO.records);
-            Console.WriteLine("Standard Deviation using standard method = {0}", standard_deviation);
-
-            //Total Execution Time: 446 ms
-            //Standard Deviation = 43.30127018922193
-            //Standard Deviation using standard method = 43.30127018922193
+            return salesImportCsvResultDTO;
         }
 
         static double standardDeviation(IEnumerable<double> sequence)
@@ -171,10 +165,30 @@ namespace SalesConsoleApp.Process
                                 importCsvFile, csv.Context.Parser.RawRow), 
                                 e.Message));
                         }
+                        
+                        CollectStatistics(record, ref salesImportCsvResultDTO);
+                        
+                        //var statisticPerYear = new StatisticPerYearDTO();
+                        //statisticPerYear.count++;
+                        //statisticPerYear.sum += record.Amount.Value;
+                        //statisticPerYear.sumd += (decimal)Math.Pow((double)record.Amount.Value, 2);
 
-                        salesImportCsvResultDTO.count++;
-                        salesImportCsvResultDTO.sum += record.Amount.Value;
-                        salesImportCsvResultDTO.sumd += (decimal)Math.Pow((double)record.Amount.Value, 2);
+                        //var year = record.Date.Value.Year;
+                        //bool isFound = salesImportCsvResultDTO.StatisticPerYear.TryGetValue(year, out StatisticPerYearDTO existingStatisticPerYear);
+                        //if (isFound)
+                        //{
+                        //    existingStatisticPerYear.count++;
+                        //    existingStatisticPerYear.sum += record.Amount.Value;
+                        //    existingStatisticPerYear.sumd += (decimal)Math.Pow((double)record.Amount.Value, 2);
+                        //    salesImportCsvResultDTO.StatisticPerYear.TryAdd(year, existingStatisticPerYear);
+                        //}
+                        //else
+                        // salesImportCsvResultDTO.StatisticPerYear.TryAdd(year, statisticPerYear);
+
+
+                        //salesImportCsvResultDTO.count++;
+                        //salesImportCsvResultDTO.sum += record.Amount.Value;
+                        //salesImportCsvResultDTO.sumd += (decimal)Math.Pow((double)record.Amount.Value, 2);
 
                         // remove !!!!! salesImportCsvResultDTO.records.Add((double)record.Amount);
                     }
@@ -192,6 +206,10 @@ namespace SalesConsoleApp.Process
             {
                 throw new ArgumentException("Record is null");
             }
+            if (!string.IsNullOrEmpty(record.Redundant))
+            {
+                throw new ArgumentException(string.Format("Invalid data: Found extra info [{0}]", record.Redundant));
+            }
             if (!record.Date.HasValue)
             {
                 throw new ArgumentException("Empty Date");
@@ -202,6 +220,31 @@ namespace SalesConsoleApp.Process
             }
         }
 
+        private static void CollectStatistics(SalesDTO? record, ref SalesImportCsvResultDTO salesImportCsvResultDTO)
+        {
+            var statisticPerYear = new StatisticPerYearDTO();
+            statisticPerYear.count++;
+            statisticPerYear.sum += record.Amount.Value;
+            statisticPerYear.sumd += (decimal)Math.Pow((double)record.Amount.Value, 2);
+
+            var year = record.Date.Value.Year;
+            bool isFound = salesImportCsvResultDTO.StatisticPerYear.TryGetValue(year, out StatisticPerYearDTO existingStatisticPerYear);
+            if (isFound)
+            {
+                existingStatisticPerYear.count++;
+                existingStatisticPerYear.sum += record.Amount.Value;
+                existingStatisticPerYear.sumd += (decimal)Math.Pow((double)record.Amount.Value, 2);
+                salesImportCsvResultDTO.StatisticPerYear.TryAdd(year, existingStatisticPerYear);
+            }
+            else
+                salesImportCsvResultDTO.StatisticPerYear.TryAdd(year, statisticPerYear);
+
+
+            salesImportCsvResultDTO.count++;
+            salesImportCsvResultDTO.sum += record.Amount.Value;
+            salesImportCsvResultDTO.sumd += (decimal)Math.Pow((double)record.Amount.Value, 2);
+
+        }
 
     }
 }

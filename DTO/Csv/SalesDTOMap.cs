@@ -28,6 +28,8 @@ namespace SalesConsoleApp.DTO.Csv
 
             Map(m => m.Amount).Convert(NullDecimalParser);
 
+            Map(m => m.Redundant).Convert(NullStringParser);
+
         }
 
         private DateTime? NullDateTimeParser(ConvertFromStringArgs arg)
@@ -43,7 +45,7 @@ namespace SalesConsoleApp.DTO.Csv
                 if (result != null)
                     return result;
                 else
-                    throw new ArgumentException(string.Format("Invalid Date provided {0}. Date format should be '{1}'", 
+                    throw new ArgumentException(string.Format("Invalid Date provided [{0}]. Date format should be '{1}'", 
                         rawValue, ReadSalesProcess.DateFormat));
             }
         }
@@ -65,5 +67,16 @@ namespace SalesConsoleApp.DTO.Csv
             }
         }
 
+        private string? NullStringParser(ConvertFromStringArgs arg)
+        {
+            arg.Row.TryGetField(typeof(string), 2, out object? rawValue);
+
+            if (rawValue == null || string.IsNullOrEmpty(rawValue.ToString()) || rawValue.ToString() == "NULL")
+                return null;
+            else
+                return rawValue.ToString();
+        }
+
     }
 }
+
