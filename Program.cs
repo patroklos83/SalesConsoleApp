@@ -37,7 +37,7 @@ namespace SalesConsoleApp
             //https://www.csharp-examples.net/string-format-double/#:~:text=For%20two%20decimal%20places%20use,the%20number%20will%20be%20rounded.
             try
             {
-                SalesImportCsvResultDTO result = ReadSalesProcess.ExecuteProcess(userInput);
+                SalesImportCsvResultDTO result = ReadSalesProcess.Read(userInput);
                 ConsoleOutput.DisplayStatistics(result);
             }
             catch (Exception ex)

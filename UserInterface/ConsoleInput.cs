@@ -1,4 +1,5 @@
-﻿using SalesConsoleApp.DTO.Csv;
+﻿using Microsoft.VisualBasic;
+using SalesConsoleApp.DTO.Csv;
 using SalesConsoleApp.Enums;
 using SalesConsoleApp.Process;
 using SalesConsoleApp.Utility;
@@ -18,9 +19,12 @@ namespace SalesConsoleApp.UserInterface
             SalesImportCsvInputDTO result = new SalesImportCsvInputDTO();
 
             string? inputFolderPath = null;
-            Console.WriteLine("Please specify the folder for the .CSV files(s):");
-            Console.WriteLine("Note: if no path is specified, default [/ImportFiles] path will be used");
-            inputFolderPath = Console.ReadLine();
+            while (!IsFilePathValid(inputFolderPath))
+            {
+                Console.WriteLine("Please specify the folder for the .CSV files(s):");
+                Console.WriteLine("Note: if no path is specified, default [/ImportFiles] path will be used");
+                inputFolderPath = Console.ReadLine();
+            }
 
             result.FilesPath = !string.IsNullOrWhiteSpace(inputFolderPath) ? inputFolderPath : null;
 
@@ -34,7 +38,7 @@ namespace SalesConsoleApp.UserInterface
                 dateFormat = Console.ReadLine();
             }
 
-            int dateFormatInt = Int32.Parse(dateFormat, NumberStyles.Integer);
+            int dateFormatInt = int.Parse(dateFormat, NumberStyles.Integer);
             result.Date = new DateDTO
             {
                 DateFormat = (DateFormatEnum?)dateFormatInt
@@ -64,8 +68,8 @@ namespace SalesConsoleApp.UserInterface
                 includeCurrencySign = Console.ReadLine();
             }
 
-            int amountFormatInt = Int32.Parse(amountFormat, NumberStyles.Integer);
-            int currencySymbolInt = Int32.Parse(includeCurrencySign, NumberStyles.Integer);
+            int amountFormatInt = int.Parse(amountFormat, NumberStyles.Integer);
+            int currencySymbolInt = int.Parse(includeCurrencySign, NumberStyles.Integer);
 
             result.AmountFormat = new AmountFormatDTO()
             {
@@ -87,38 +91,76 @@ namespace SalesConsoleApp.UserInterface
                 }
             }
 
+            Console.WriteLine("Do you want to export statistics of a specific date range? [Y/N]:?");
+            bool isDateRange = false;
+            while(!IsYesOrNo(isDateRange))
+            {
+
+
+            }
+
+
             Console.WriteLine("");
             Console.WriteLine("Please specify the Date Range for the calculation of Sales statistics");
             Console.WriteLine("");
 
-            int numberOfDecimalPointsInt = Int32.Parse(numberOfDecimalPoints ?? "0", NumberStyles.Integer);
+            int numberOfDecimalPointsInt = int.Parse(numberOfDecimalPoints ?? "0", NumberStyles.Integer);
             result.AmountFormat.NumberOfDecimalPoints = numberOfDecimalPointsInt;
 
-            //string? fromDate = null;
-            //string dateFormatStr = DateTimeUtil.GetDateFormatByDateFormatEnum(result.Date.DateFormat.Value);
-            //while (!IsDateFromValid(fromDate, dateFormatStr))
-            //{
-            //    Console.WriteLine(string.Format("From Date: example format ({0})", dateFormatStr));
-            //    Console.WriteLine("");
+            string? fromDate = null;
+            string dateFormatStr = DateTimeUtil.GetDateFormatByDateFormatEnum(result.Date.DateFormat.Value);
+            while (!IsDateFromValid(fromDate, dateFormatStr))
+            {
+                Console.WriteLine(string.Format("From Date: example format ({0})", dateFormatStr));
+                Console.WriteLine("");
 
-            //    fromDate = Console.ReadLine();
-            //}
+                fromDate = Console.ReadLine();
+            }
 
-            //Console.WriteLine("");
+            Console.WriteLine("");
 
-            //string? toDate = null;
-            //while (!IsDateToValid(toDate, dateFormatStr))
-            //{
-            //    Console.WriteLine(string.Format("To Date: example format ({0})", dateFormatStr));
-            //    Console.WriteLine("");
+            string? toDate = null;
+            while (!IsDateToValid(toDate, dateFormatStr))
+            {
+                Console.WriteLine(string.Format("To Date: example format ({0})", dateFormatStr));
+                Console.WriteLine("");
 
-            //    toDate = Console.ReadLine();
-            //}
+                toDate = Console.ReadLine();
+            }
 
-            //result.Date.FromDate = DateTimeUtil.ConvertStringToDateTimeFormat(dateFormatStr, fromDate);
-            //result.Date.ToDate = DateTimeUtil.ConvertStringToDateTimeFormat(dateFormatStr, toDate);
+            result.Date.FromDate = DateTimeUtil.ConvertStringToDateTimeFormat(dateFormatStr, fromDate);
+            result.Date.ToDate = DateTimeUtil.ConvertStringToDateTimeFormat(dateFormatStr, toDate);
 
             return result;
+        }
+
+        private static bool IsYesOrNo(bool isDateRange)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static bool IsFilePathValid(string? inputFolderPath)
+        {
+            if (string.Empty.Equals(inputFolderPath))
+            {
+                // valid case, default filepath will be used instead
+                return true;
+            }
+
+            int i = 0;
+            bool isNum = int.TryParse(inputFolderPath, out i);
+            if (isNum)
+            {
+                Console.WriteLine("Not a valid path: This value is numeric");
+                return false;
+            }
+
+            if (!string.IsNullOrEmpty(inputFolderPath))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private static bool IsDateToValid(string? toDate, string format)
@@ -164,7 +206,7 @@ namespace SalesConsoleApp.UserInterface
                 return false;
             }
 
-            bool isValid = Int32.TryParse(numberOfDecimalPoints, NumberStyles.Integer, CultureInfo.InvariantCulture, out int resultInt);
+            bool isValid = int.TryParse(numberOfDecimalPoints, NumberStyles.Integer, CultureInfo.InvariantCulture, out int resultInt);
             if (!isValid)
             {
                 Console.WriteLine("Not an integer number");
@@ -193,7 +235,7 @@ namespace SalesConsoleApp.UserInterface
                 return false;
             }
 
-            bool isValid = Int32.TryParse(dateFormat, NumberStyles.Integer, CultureInfo.InvariantCulture, out int resultInt);
+            bool isValid = int.TryParse(dateFormat, NumberStyles.Integer, CultureInfo.InvariantCulture, out int resultInt);
             if (!isValid)
             {
                 Console.WriteLine("Not an integer number");
@@ -217,7 +259,7 @@ namespace SalesConsoleApp.UserInterface
                 return false;
             }
 
-            bool isValid = Int32.TryParse(amountFormat, NumberStyles.Integer, CultureInfo.InvariantCulture, out int resultInt);
+            bool isValid = int.TryParse(amountFormat, NumberStyles.Integer, CultureInfo.InvariantCulture, out int resultInt);
             if (!isValid)
             {
                 Console.WriteLine("Not an integer number");
@@ -241,7 +283,7 @@ namespace SalesConsoleApp.UserInterface
                 return false;
             }
 
-            bool isValid = Int32.TryParse(amountCurrencyFormat, NumberStyles.Integer, CultureInfo.InvariantCulture, out int resultInt);
+            bool isValid = int.TryParse(amountCurrencyFormat, NumberStyles.Integer, CultureInfo.InvariantCulture, out int resultInt);
             if (!isValid)
             {
                 Console.WriteLine("Not an integer number");

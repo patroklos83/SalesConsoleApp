@@ -28,19 +28,7 @@ namespace SalesConsoleApp.Utility
             return Math.Round(average, AmountUtil.AMOUNT_DECIMAL_POINTS_MAX);
         }
 
-        private double getStandardDeviation(List<double> doubleList)
-        {
-            double average = doubleList.Average();
-            double sumOfDerivation = 0;
-            foreach (double value in doubleList)
-            {
-                sumOfDerivation += (value) * (value);
-            }
-            double sumOfDerivationAverage = sumOfDerivation / (doubleList.Count - 1);
-            return Math.Sqrt(sumOfDerivationAverage - (average * average));
-        }
-
-        static double standardDeviation(IEnumerable<double> sequence)
+        internal static double standardDeviation(IEnumerable<double> sequence)
         {
             double result = 0;
 
@@ -51,6 +39,18 @@ namespace SalesConsoleApp.Utility
                 result = Math.Sqrt((sum) / sequence.Count());
             }
             return result;
+        }
+
+        private double getStandardDeviation(List<double> doubleList)
+        {
+            double average = doubleList.Average();
+            double sumOfDerivation = 0;
+            foreach (double value in doubleList)
+            {
+                sumOfDerivation += (value) * (value);
+            }
+            double sumOfDerivationAverage = sumOfDerivation / (doubleList.Count - 1);
+            return Math.Sqrt(sumOfDerivationAverage - (average * average));
         }
     }
 }

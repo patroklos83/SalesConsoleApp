@@ -28,7 +28,7 @@ namespace SalesConsoleApp.Process
             NumberOfDecimalPoints = AmountUtil.AMOUNT_DECIMAL_POINTS_MAX
         };
 
-        internal static SalesImportCsvResultDTO ExecuteProcess(SalesImportCsvInputDTO input)
+        internal static SalesImportCsvResultDTO Read(SalesImportCsvInputDTO input)
         {
             DateFormat = DateTimeUtil.GetDateFormatByDateFormatEnum(input.Date.DateFormat.Value);
             AmountFormat.Format = input.AmountFormat.Format;
@@ -41,6 +41,15 @@ namespace SalesConsoleApp.Process
                 AmountFormat.StrAmountFormat,
                 AmountFormat.NumberOfDecimalPoints);
 
+
+            if (input.Date.FromDate.Value >= input.Date.ToDate)
+            {
+                throw new ArgumentException(string.Format("[From] Date: {0} is invalid (comes after to-date). [From] Date {1} > [To] Date {2}",
+                    input.Date.FromDate.Value.ToString(DateFormat),
+                    input.Date.FromDate.Value.ToString(DateFormat), 
+                    input.Date.ToDate.Value.ToString(DateFormat)));
+            }
+
             Console.WriteLine();
             Console.WriteLine("Proceeding with formats");
             Console.WriteLine("---------------------------------------------------");
@@ -48,13 +57,8 @@ namespace SalesConsoleApp.Process
             Console.WriteLine(string.Format("Amount Format: {0}", amountFormat));
             Console.WriteLine();
 
-            string path = string.IsNullOrEmpty(input.FilesPath) ? FILES_PATH : input.FilesPath;
-
-            Console.WriteLine(string.Format("CSV Import File(s) path: [{0}]", path));
-            Console.WriteLine("");
-
             var watch = System.Diagnostics.Stopwatch.StartNew();
-            var salesImportCsvResultDTO = ReadImportFiles(path);
+            var salesImportCsvResultDTO = ReadImportFiles(input);
             watch.Stop();
 
             Console.WriteLine($"Total Execution Time: {watch.ElapsedMilliseconds} ms");
@@ -62,29 +66,21 @@ namespace SalesConsoleApp.Process
             return salesImportCsvResultDTO;
         }
 
-        static double standardDeviation(IEnumerable<double> sequence)
-        {
-            double result = 0;
-
-            if (sequence.Any())
-            {
-                double average = sequence.Average();
-                double sum = sequence.Sum(d => Math.Pow(d - average, 2));
-                result = Math.Sqrt((sum) / sequence.Count());
-            }
-            return result;
-        }
-
-    private static SalesImportCsvResultDTO ReadImportFiles(string importPath)
+    private static SalesImportCsvResultDTO ReadImportFiles(SalesImportCsvInputDTO input)
         {
             SalesImportCsvResultDTO salesImportCsvResultDTO = new SalesImportCsvResultDTO();
 
-            var filesEnum = Directory.EnumerateFiles(importPath, "*.csv");
+            string path = string.IsNullOrEmpty(input.FilesPath) ? FILES_PATH : input.FilesPath;
+
+            Console.WriteLine(string.Format("CSV Import File(s) path: [{0}]", path));
+            Console.WriteLine("");
+
+            var filesEnum = Directory.EnumerateFiles(path, "*.csv");
             List<string> files = new List<string>(filesEnum);
 
             if (files == null || !files.Any())
             {
-                throw new ArgumentException(string.Format("No import csv files found in the specified path {0}", importPath));
+                throw new ArgumentException(string.Format("No import csv files found in the specified path {0}", path));
             }
 
             if (files.Count() > 1)
@@ -98,7 +94,7 @@ namespace SalesConsoleApp.Process
                 {
                     foreach (var importCsvFile in partition1)
                     {
-                        ReadCSV(importCsvFile, ref salesImportCsvResultDTO1);
+                        ReadCSV(importCsvFile, input, ref salesImportCsvResultDTO1);
                     }
                 });
 
@@ -107,7 +103,7 @@ namespace SalesConsoleApp.Process
                 {
                     foreach (var importCsvFile in partition2)
                     {
-                        ReadCSV(importCsvFile, ref salesImportCsvResultDTO2);
+                        ReadCSV(importCsvFile, input, ref salesImportCsvResultDTO2);
                     }
                 });
 
@@ -121,13 +117,13 @@ namespace SalesConsoleApp.Process
             {
                 foreach (var importCsvFile in files)
                 {
-                    ReadCSV(importCsvFile, ref salesImportCsvResultDTO);
+                    ReadCSV(importCsvFile, input, ref salesImportCsvResultDTO);
                 }
             }
 
             return salesImportCsvResultDTO;
         }
-        private static SalesImportCsvResultDTO ReadCSV(string importCsvFile, ref SalesImportCsvResultDTO salesImportCsvResultDTO)
+        private static SalesImportCsvResultDTO ReadCSV(string importCsvFile, SalesImportCsvInputDTO input, ref SalesImportCsvResultDTO salesImportCsvResultDTO)
         {
             var configuration = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
@@ -166,31 +162,7 @@ namespace SalesConsoleApp.Process
                                 e.Message));
                         }
                         
-                        CollectStatistics(record, ref salesImportCsvResultDTO);
-                        
-                        //var statisticPerYear = new StatisticPerYearDTO();
-                        //statisticPerYear.count++;
-                        //statisticPerYear.sum += record.Amount.Value;
-                        //statisticPerYear.sumd += (decimal)Math.Pow((double)record.Amount.Value, 2);
-
-                        //var year = record.Date.Value.Year;
-                        //bool isFound = salesImportCsvResultDTO.StatisticPerYear.TryGetValue(year, out StatisticPerYearDTO existingStatisticPerYear);
-                        //if (isFound)
-                        //{
-                        //    existingStatisticPerYear.count++;
-                        //    existingStatisticPerYear.sum += record.Amount.Value;
-                        //    existingStatisticPerYear.sumd += (decimal)Math.Pow((double)record.Amount.Value, 2);
-                        //    salesImportCsvResultDTO.StatisticPerYear.TryAdd(year, existingStatisticPerYear);
-                        //}
-                        //else
-                        // salesImportCsvResultDTO.StatisticPerYear.TryAdd(year, statisticPerYear);
-
-
-                        //salesImportCsvResultDTO.count++;
-                        //salesImportCsvResultDTO.sum += record.Amount.Value;
-                        //salesImportCsvResultDTO.sumd += (decimal)Math.Pow((double)record.Amount.Value, 2);
-
-                        // remove !!!!! salesImportCsvResultDTO.records.Add((double)record.Amount);
+                        CollectStatistics(record, input, ref salesImportCsvResultDTO);
                     }
 
                     Console.WriteLine(string.Format("Completed reading import file {0}", importCsvFile));
@@ -220,30 +192,89 @@ namespace SalesConsoleApp.Process
             }
         }
 
-        private static void CollectStatistics(SalesDTO? record, ref SalesImportCsvResultDTO salesImportCsvResultDTO)
+        private static void CollectStatistics(SalesDTO? record, SalesImportCsvInputDTO input, ref SalesImportCsvResultDTO salesImportCsvResultDTO)
         {
             var statisticPerYear = new StatisticPerYearDTO();
             statisticPerYear.count++;
             statisticPerYear.sum += record.Amount.Value;
             statisticPerYear.sumd += (decimal)Math.Pow((double)record.Amount.Value, 2);
 
-            var year = record.Date.Value.Year;
+            statisticPerYear.records.Add((double)record.Amount); //test remove !!!!
+
+            var currDate = record.Date.Value;
+            var year = currDate.Year;
+
+            // Store minimum date found in all csv files
+            if (!salesImportCsvResultDTO.MinDateFound.HasValue)
+            {
+                salesImportCsvResultDTO.MinDateFound = currDate;
+            }
+            else if (salesImportCsvResultDTO.MinDateFound > currDate)
+            {
+                salesImportCsvResultDTO.MinDateFound = currDate;
+            }
+
+            // Store maximum date found in all csv files
+            if (!salesImportCsvResultDTO.MaxDateFound.HasValue)
+            {
+                salesImportCsvResultDTO.MaxDateFound = currDate;
+            }
+            else if (salesImportCsvResultDTO.MaxDateFound < currDate)
+            {
+                salesImportCsvResultDTO.MaxDateFound = currDate;
+            }
+
+            // Collect statistics per year
             bool isFound = salesImportCsvResultDTO.StatisticPerYear.TryGetValue(year, out StatisticPerYearDTO existingStatisticPerYear);
             if (isFound)
             {
                 existingStatisticPerYear.count++;
                 existingStatisticPerYear.sum += record.Amount.Value;
                 existingStatisticPerYear.sumd += (decimal)Math.Pow((double)record.Amount.Value, 2);
+
+                existingStatisticPerYear.records.Add((double)record.Amount); //test remove !!!!
+
                 salesImportCsvResultDTO.StatisticPerYear.TryAdd(year, existingStatisticPerYear);
             }
             else
                 salesImportCsvResultDTO.StatisticPerYear.TryAdd(year, statisticPerYear);
 
+            // Collect statistics for a range of dates [given input by the user]
+            if (input.Date.FromDate.Value <= currDate && input.Date.ToDate >= currDate)
+            {
+                // Store minimum date found in all csv files
+                if (!salesImportCsvResultDTO.StatisticPerRangeOfYears.MinDateFound.HasValue)
+                {
+                    salesImportCsvResultDTO.StatisticPerRangeOfYears.MinDateFound = currDate;
+                }
+                else if (salesImportCsvResultDTO.StatisticPerRangeOfYears.MinDateFound > currDate)
+                {
+                    salesImportCsvResultDTO.StatisticPerRangeOfYears.MinDateFound = currDate;
+                }
 
+                // Store maximum date found in all csv files
+                if (!salesImportCsvResultDTO.StatisticPerRangeOfYears.MaxDateFound.HasValue)
+                {
+                    salesImportCsvResultDTO.StatisticPerRangeOfYears.MaxDateFound = currDate;
+                }
+                else if (salesImportCsvResultDTO.StatisticPerRangeOfYears.MaxDateFound < currDate)
+                {
+                    salesImportCsvResultDTO.StatisticPerRangeOfYears.MaxDateFound = currDate;
+                }
+
+                salesImportCsvResultDTO.StatisticPerRangeOfYears.count++;
+                salesImportCsvResultDTO.StatisticPerRangeOfYears.sum += record.Amount.Value;
+                salesImportCsvResultDTO.StatisticPerRangeOfYears.sumd += (decimal)Math.Pow((double)record.Amount.Value, 2);
+                salesImportCsvResultDTO.StatisticPerRangeOfYears.records.Add((double)record.Amount); //test remove !!!!
+            }
+
+            // Collect statistics for total rows read
             salesImportCsvResultDTO.count++;
             salesImportCsvResultDTO.sum += record.Amount.Value;
             salesImportCsvResultDTO.sumd += (decimal)Math.Pow((double)record.Amount.Value, 2);
 
+
+            salesImportCsvResultDTO.records.Add((double)record.Amount); //test remove !!!!
         }
 
     }
