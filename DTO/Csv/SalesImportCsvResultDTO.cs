@@ -12,12 +12,11 @@ namespace SalesConsoleApp.DTO.Csv
         public decimal sum { get; set; }
         public decimal sumd { get; set; }
         public decimal average { get; set; }
-        public decimal mean { get; set; }
 
         public List<double> records { get; set; } = new List<double>();
 
-        public SortedDictionary<int, StatisticPerYearDTO> StatisticPerYear { get; set; } = new SortedDictionary<int, StatisticPerYearDTO>();
-        public StatisticPerYearDTO StatisticPerRangeOfYears { get; set; } = new StatisticPerYearDTO();
+        public SortedDictionary<int, StatisticPerYearDTO> StatisticPerYear { get; set; }
+        public StatisticPerYearDTO StatisticSpecificDateRange { get; set; }
         public DateTime? MinDateFound { get; internal set; }
         public DateTime? MaxDateFound { get; internal set; }
     }
@@ -29,8 +28,7 @@ namespace SalesConsoleApp.DTO.Csv
         public int count { get; set; }
         public decimal sum { get; set; }
         public decimal sumd { get; set; }
-        public decimal average { get; set; }
-        public decimal mean { get; set; }
+        public SortedDictionary<int, byte[]> MonthDaysIterated { get; set; } = new SortedDictionary<int, byte[]>();
 
         public List<double> records { get; set; } = new List<double>();
     }

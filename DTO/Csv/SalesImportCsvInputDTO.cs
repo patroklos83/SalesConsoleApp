@@ -19,6 +19,8 @@ namespace SalesConsoleApp.DTO.Csv
         public DateFormatEnum? DateFormat { get; set; }
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
+        public string? FromYear { get; internal set; }
+        public string? ToYear { get; internal set; }
     }
 
     internal class AmountFormatDTO

@@ -60,24 +60,31 @@ namespace SalesConsoleApp.UserInterface
             }
 
             Console.WriteLine();
+            
 
-            if (salesImportCscResult.StatisticPerRangeOfYears.MinDateFound.HasValue &&
-              salesImportCscResult.StatisticPerRangeOfYears.MaxDateFound.HasValue)
+            string strDateRangeTitle = "Statistics for a specific of Dates";
+
+            if (salesImportCscResult.StatisticSpecificDateRange != null
+                && salesImportCscResult.StatisticSpecificDateRange.MinDateFound.HasValue &&
+              salesImportCscResult.StatisticSpecificDateRange.MaxDateFound.HasValue)
             {
-                Console.WriteLine(string.Format("Standard Deviation for range of Dates {0} - {1}",
-                    salesImportCscResult.StatisticPerRangeOfYears.MinDateFound.Value.ToString(ReadSalesProcess.DateFormat),
-                    salesImportCscResult.StatisticPerRangeOfYears.MaxDateFound.Value.ToString(ReadSalesProcess.DateFormat)));
+                Console.WriteLine(string.Format("{0} {1} - {2}",
+                    strDateRangeTitle,
+                    salesImportCscResult.StatisticSpecificDateRange.MinDateFound.Value.ToString(ReadSalesProcess.DateFormat),
+                    salesImportCscResult.StatisticSpecificDateRange.MaxDateFound.Value.ToString(ReadSalesProcess.DateFormat)));
                 Console.WriteLine("=============================================================");
-                standardDeviation = StatisticsUtil.GetStandardDeviation(salesImportCscResult.StatisticPerRangeOfYears.sumd,
-                        salesImportCscResult.StatisticPerRangeOfYears.sum,
-                        salesImportCscResult.StatisticPerRangeOfYears.count);
+                standardDeviation = StatisticsUtil.GetStandardDeviation(salesImportCscResult.StatisticSpecificDateRange.sumd,
+                        salesImportCscResult.StatisticSpecificDateRange.sum,
+                        salesImportCscResult.StatisticSpecificDateRange.count);
                 Console.WriteLine("Standard Deviation = {0}", standardDeviation);
                 //TEST!!!!!
-                Console.WriteLine("Standard Deviation TEST!!!!! = {0}", StatisticsUtil.standardDeviation(salesImportCscResult.StatisticPerRangeOfYears.records));
+                Console.WriteLine("Standard Deviation TEST!!!!! = {0}", StatisticsUtil.standardDeviation(salesImportCscResult.StatisticSpecificDateRange.records));
             }
             else
             {
-                Console.WriteLine("No dates found in between the given input [From] - [To] Dates");
+                Console.WriteLine(strDateRangeTitle);
+                Console.WriteLine("=============================================================");
+                Console.WriteLine("No specific date range entered by the user");
             }
 
 
@@ -91,6 +98,44 @@ namespace SalesConsoleApp.UserInterface
                 decimal averageEarnings = StatisticsUtil.GetAverage(statistics.sum, statistics.count);
                 Console.WriteLine("Average Sales Earnings = {0} [For year: {1}]", averageEarnings, year);
             }
+        }
+
+        internal static void DisplayStatisticsForYearRange(SalesImportCsvInputDTO input, SalesImportCsvResultDTO result)
+        {
+            if (string.IsNullOrEmpty(input.Date.FromYear) || string.IsNullOrEmpty(input.Date.ToYear))
+            {
+                return;
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(string.Format("Statistics for year range [{0} - {1}]", input.Date.FromYear, input.Date.ToYear));
+            Console.WriteLine("=============================================================");
+            int count = 0;
+            decimal sum = 0;
+            decimal sumd = 0;
+            var record = new List<double>();
+            foreach (var yearEntry in result.StatisticPerYear)
+            {
+                var year = yearEntry.Key;
+                if (year > int.Parse(input.Date.ToYear) || year < int.Parse(input.Date.FromYear))
+                    continue;
+
+                var statistics = yearEntry.Value;
+
+                count += statistics.count;
+                sumd += statistics.sumd;
+                sum += statistics.sum;
+
+                record.AddRange(statistics.records);
+            }
+            double sd = StatisticsUtil.GetStandardDeviation(sumd, sum, count);
+            Console.WriteLine("Standard Deviation = {0}", sd);
+
+            double sd1 = StatisticsUtil.standardDeviation(record);
+            Console.WriteLine("Standard Deviation = {0} // test!!!!!", sd1);
+
+            double average = (double)StatisticsUtil.GetAverage(sum, count);
+            Console.WriteLine("Average Sales Earnings = {0}", average);
         }
     }
 }

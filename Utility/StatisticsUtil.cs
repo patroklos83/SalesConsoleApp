@@ -18,7 +18,6 @@ namespace SalesConsoleApp.Utility
             decimal sumOfDerivationAverage = sumd / count;
             decimal average = sum / count;
             var result = Math.Sqrt((double)(sumOfDerivationAverage - (average * average)));
-            // Console.WriteLine("Standard Deviation = {0}", result);
             return Math.Round(result, AmountUtil.AMOUNT_DECIMAL_POINTS_MAX);
         }
 

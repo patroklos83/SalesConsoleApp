@@ -16,7 +16,7 @@ namespace SalesConsoleApp.UserInterface
     {
         internal static SalesImportCsvInputDTO GetUserInput()
         {
-            SalesImportCsvInputDTO result = new SalesImportCsvInputDTO();
+            SalesImportCsvInputDTO input = new SalesImportCsvInputDTO();
 
             string? inputFolderPath = null;
             while (!IsFilePathValid(inputFolderPath))
@@ -26,7 +26,7 @@ namespace SalesConsoleApp.UserInterface
                 inputFolderPath = Console.ReadLine();
             }
 
-            result.FilesPath = !string.IsNullOrWhiteSpace(inputFolderPath) ? inputFolderPath : null;
+            input.FilesPath = !string.IsNullOrWhiteSpace(inputFolderPath) ? inputFolderPath : null;
 
             string? dateFormat = null;
             while (!IsDateFormatValid(dateFormat))
@@ -39,7 +39,7 @@ namespace SalesConsoleApp.UserInterface
             }
 
             int dateFormatInt = int.Parse(dateFormat, NumberStyles.Integer);
-            result.Date = new DateDTO
+            input.Date = new DateDTO
             {
                 DateFormat = (DateFormatEnum?)dateFormatInt
             };
@@ -71,14 +71,14 @@ namespace SalesConsoleApp.UserInterface
             int amountFormatInt = int.Parse(amountFormat, NumberStyles.Integer);
             int currencySymbolInt = int.Parse(includeCurrencySign, NumberStyles.Integer);
 
-            result.AmountFormat = new AmountFormatDTO()
+            input.AmountFormat = new AmountFormatDTO()
             {
                 Format = (AmountFormatEnum?)amountFormatInt,
                 CurrencySymbol = (AmountCurrencyFormatEnum?)currencySymbolInt
             };
 
             string? numberOfDecimalPoints = null;
-            if (result.AmountFormat.Format > AmountFormatEnum.AmountFormat1)
+            if (input.AmountFormat.Format > AmountFormatEnum.AmountFormat1)
             {
                 Console.WriteLine("");
 
@@ -91,24 +91,33 @@ namespace SalesConsoleApp.UserInterface
                 }
             }
 
-            Console.WriteLine("Do you want to export statistics of a specific date range? [Y/N]:?");
-            bool isDateRange = false;
-            while(!IsYesOrNo(isDateRange))
+            string isDateRangeYesOrNo = null;
+            while(!IsValidYesOrNo(isDateRangeYesOrNo))
             {
-
-
+                Console.WriteLine("Do you want to export statistics of a specific date range?");
+                Console.WriteLine("[Y/N] ?: ");
+                isDateRangeYesOrNo = Console.ReadLine();
             }
 
+            if (IsYesOrNo(isDateRangeYesOrNo))
+            {
+                input = CollectDateRangeInput(input);
+            }
 
+            int numberOfDecimalPointsInt = int.Parse(numberOfDecimalPoints ?? "0", NumberStyles.Integer);
+            input.AmountFormat.NumberOfDecimalPoints = numberOfDecimalPointsInt;
+
+            return input;
+        }
+
+        private static SalesImportCsvInputDTO CollectDateRangeInput(SalesImportCsvInputDTO input)
+        {
             Console.WriteLine("");
             Console.WriteLine("Please specify the Date Range for the calculation of Sales statistics");
             Console.WriteLine("");
 
-            int numberOfDecimalPointsInt = int.Parse(numberOfDecimalPoints ?? "0", NumberStyles.Integer);
-            result.AmountFormat.NumberOfDecimalPoints = numberOfDecimalPointsInt;
-
             string? fromDate = null;
-            string dateFormatStr = DateTimeUtil.GetDateFormatByDateFormatEnum(result.Date.DateFormat.Value);
+            string dateFormatStr = DateTimeUtil.GetDateFormatByDateFormatEnum(input.Date.DateFormat.Value);
             while (!IsDateFromValid(fromDate, dateFormatStr))
             {
                 Console.WriteLine(string.Format("From Date: example format ({0})", dateFormatStr));
@@ -128,15 +137,102 @@ namespace SalesConsoleApp.UserInterface
                 toDate = Console.ReadLine();
             }
 
-            result.Date.FromDate = DateTimeUtil.ConvertStringToDateTimeFormat(dateFormatStr, fromDate);
-            result.Date.ToDate = DateTimeUtil.ConvertStringToDateTimeFormat(dateFormatStr, toDate);
+            input.Date.FromDate = DateTimeUtil.ConvertStringToDateTimeFormat(dateFormatStr, fromDate);
+            input.Date.ToDate = DateTimeUtil.ConvertStringToDateTimeFormat(dateFormatStr, toDate);
 
-            return result;
+            return input;
         }
 
-        private static bool IsYesOrNo(bool isDateRange)
+        internal static SalesImportCsvInputDTO GetYearRange(SalesImportCsvInputDTO input, SalesImportCsvResultDTO result)
         {
-            throw new NotImplementedException();
+            Console.WriteLine();
+
+            string isYearRangeYesOrNo = null;
+            while (!IsValidYesOrNo(isYearRangeYesOrNo))
+            { 
+                Console.WriteLine("Do you want to export statistics for a specific range of years");
+                Console.WriteLine("[Y/N] ?: ");
+                isYearRangeYesOrNo = Console.ReadLine();
+            }
+
+            if (IsYesOrNo(isYearRangeYesOrNo))
+            {
+                input = ConsoleInput.CollectYearRange(input, 
+                    new SortedSet<string> ( result.StatisticPerYear.Keys.Select(y => y.ToString()) ));
+            }
+
+            return input;
+        }
+
+        internal static SalesImportCsvInputDTO CollectYearRange(SalesImportCsvInputDTO input, SortedSet<string> yearsAvailable)
+        {
+            Console.WriteLine("");
+            Console.WriteLine("Please specify the Years Range for the calculation of Sales statistics");
+            Console.WriteLine("");
+
+            string? fromYear = null;
+            while (!IsYearValid(fromYear, yearsAvailable))
+            {
+                Console.Write("From Year:");
+                fromYear = Console.ReadLine();
+            }
+
+            Console.WriteLine("");
+
+            string? toYear = null;
+            while (!IsYearValid(toYear, yearsAvailable))
+            {
+                Console.Write("To Year:");
+                toYear = Console.ReadLine();
+            }
+
+            input.Date.FromYear = fromYear;
+            input.Date.ToYear = toYear;
+
+            return input;
+        }
+
+        private static bool IsYearValid(string? year, SortedSet<string> yearsAvailable)
+        {
+            if (string.Empty.Equals(year))
+            {
+                Console.WriteLine("Please enter a valid year");
+                return false;
+            }
+
+            if (!yearsAvailable.Contains(year))
+            {
+                Console.WriteLine(string.Format("Please enter a valid year from the available years [{0}]", string.Join("-", yearsAvailable)));
+                return false;
+            }
+
+            return true;
+        }
+
+        internal static bool IsValidYesOrNo(string yesOrNo)
+        {
+            if (string.IsNullOrEmpty(yesOrNo))
+            {
+                return false;
+            }
+
+            if (!yesOrNo.Equals("Y", StringComparison.OrdinalIgnoreCase) &&
+                !yesOrNo.Equals("N", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsYesOrNo(string yesOrNo)
+        {
+            if (!IsValidYesOrNo(yesOrNo))
+            {
+                throw new ArgumentException("Invalid Yes/No [Y/N]");
+            }
+
+            return yesOrNo.Equals("Y", StringComparison.OrdinalIgnoreCase) ? true : false;
         }
 
         private static bool IsFilePathValid(string? inputFolderPath)
