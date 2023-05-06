@@ -6,6 +6,7 @@ using SalesConsoleApp.Utility;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,19 +19,74 @@ namespace SalesConsoleApp.UserInterface
         {
             SalesImportCsvInputDTO input = new SalesImportCsvInputDTO();
 
-            string? inputFolderPath = null;
-            while (!IsFilePathValid(inputFolderPath))
+            input = GetFilePath(input);
+
+            input = GetFormats(input);  
+
+            string isDateRangeYesOrNo = null;
+            while(!IsValidYesOrNo(isDateRangeYesOrNo))
             {
-                Console.WriteLine("Please specify the folder for the .CSV files(s):");
-                Console.WriteLine("Note: if no path is specified, default [/ImportFiles] path will be used");
-                inputFolderPath = Console.ReadLine();
+                Console.WriteLine();
+                Console.WriteLine("Do you want to export statistics of a specific date range?");
+                Console.WriteLine("[Y/N] ?: ");
+
+                isDateRangeYesOrNo = Console.ReadLine();
             }
 
-            input.FilesPath = !string.IsNullOrWhiteSpace(inputFolderPath) ? inputFolderPath : null;
+            if (IsYesOrNo(isDateRangeYesOrNo))
+            {
+                while (!IsDateFromBeforeDateAfter(input.Date.FromDate, input.Date.ToDate))
+                {
+                    input = CollectDateRangeInput(input);
+                }
+            }
 
+            return input;
+        }
+
+        private static SalesImportCsvInputDTO CollectDateRangeInput(SalesImportCsvInputDTO input)
+        {
+            Console.WriteLine("");
+            Console.WriteLine("Please specify the Date Range for the calculation of Sales statistics");
+            Console.WriteLine("");
+
+            string? fromDate = null;
+            string dateFormatStr = DateTimeUtil.GetDateFormatByDateFormatEnum(input.Date.DateFormat.Value);
+            while (!IsDateFromValid(fromDate, dateFormatStr))
+            {
+                Console.WriteLine();
+                Console.WriteLine(string.Format("From Date: example format ({0})", dateFormatStr));
+                Console.WriteLine();
+
+                fromDate = Console.ReadLine();
+            }
+
+            Console.WriteLine();
+
+            string? toDate = null;
+            while (!IsDateToValid(toDate, dateFormatStr))
+            {
+                Console.WriteLine();
+                Console.WriteLine(string.Format("To Date: example format ({0})", dateFormatStr));
+                Console.WriteLine();
+
+                toDate = Console.ReadLine();
+            }
+
+            input.Date.FromDate = DateTimeUtil.ConvertStringToDateTimeFormat(dateFormatStr, fromDate);
+            input.Date.ToDate = DateTimeUtil.ConvertStringToDateTimeFormat(dateFormatStr, toDate);
+
+            input.Date.IsExportResultsFromToDate = true;
+
+            return input;
+        }
+
+        internal static SalesImportCsvInputDTO GetFormats(SalesImportCsvInputDTO input)
+        {
             string? dateFormat = null;
             while (!IsDateFormatValid(dateFormat))
             {
+                Console.WriteLine();
                 Console.WriteLine("Please specify the Date Format as per the import CSV file(s):");
                 Console.WriteLine("");
                 Console.WriteLine(DateTimeUtil.GetDateFormatEnumDescriptions());
@@ -44,11 +100,12 @@ namespace SalesConsoleApp.UserInterface
                 DateFormat = (DateFormatEnum?)dateFormatInt
             };
 
-            Console.WriteLine("");
+            Console.WriteLine();
 
             string? amountFormat = null;
             while (!IsAmountFormatValid(amountFormat))
             {
+                Console.WriteLine();
                 Console.WriteLine("Please specify the Amount Format as per the import CSV file(s):");
                 Console.WriteLine("");
                 Console.WriteLine(AmountUtil.GetAmountFormatEnumDescriptions());
@@ -56,11 +113,12 @@ namespace SalesConsoleApp.UserInterface
                 amountFormat = Console.ReadLine();
             }
 
-            Console.WriteLine("");
+            Console.WriteLine();
 
             string? includeCurrencySign = null;
             while (!IsAmountCurrencyFormatValid(includeCurrencySign))
             {
+                Console.WriteLine();
                 Console.WriteLine("Please specify if the Amount Format includes a currency symbol as per the import CSV file(s):");
                 Console.WriteLine("");
                 Console.WriteLine(AmountUtil.GetAmountFormatCurrencySymbolsEnumDescriptions());
@@ -80,7 +138,7 @@ namespace SalesConsoleApp.UserInterface
             string? numberOfDecimalPoints = null;
             if (input.AmountFormat.Format > AmountFormatEnum.AmountFormat1)
             {
-                Console.WriteLine("");
+                Console.WriteLine();
 
                 while (!IsAmountDecimalPointsFormatValid(numberOfDecimalPoints))
                 {
@@ -91,54 +149,23 @@ namespace SalesConsoleApp.UserInterface
                 }
             }
 
-            string isDateRangeYesOrNo = null;
-            while(!IsValidYesOrNo(isDateRangeYesOrNo))
-            {
-                Console.WriteLine("Do you want to export statistics of a specific date range?");
-                Console.WriteLine("[Y/N] ?: ");
-                isDateRangeYesOrNo = Console.ReadLine();
-            }
-
-            if (IsYesOrNo(isDateRangeYesOrNo))
-            {
-                input = CollectDateRangeInput(input);
-            }
-
             int numberOfDecimalPointsInt = int.Parse(numberOfDecimalPoints ?? "0", NumberStyles.Integer);
             input.AmountFormat.NumberOfDecimalPoints = numberOfDecimalPointsInt;
 
             return input;
         }
 
-        private static SalesImportCsvInputDTO CollectDateRangeInput(SalesImportCsvInputDTO input)
+        internal static SalesImportCsvInputDTO GetFilePath(SalesImportCsvInputDTO input)
         {
-            Console.WriteLine("");
-            Console.WriteLine("Please specify the Date Range for the calculation of Sales statistics");
-            Console.WriteLine("");
-
-            string? fromDate = null;
-            string dateFormatStr = DateTimeUtil.GetDateFormatByDateFormatEnum(input.Date.DateFormat.Value);
-            while (!IsDateFromValid(fromDate, dateFormatStr))
+            string? inputFolderPath = null;
+            while (!IsFilePathValid(inputFolderPath))
             {
-                Console.WriteLine(string.Format("From Date: example format ({0})", dateFormatStr));
-                Console.WriteLine("");
-
-                fromDate = Console.ReadLine();
+                Console.WriteLine("Please specify the folder for the .CSV files(s):");
+                Console.WriteLine("Note: if no path is specified, default [/ImportFiles] path will be used");
+                inputFolderPath = Console.ReadLine();
             }
 
-            Console.WriteLine("");
-
-            string? toDate = null;
-            while (!IsDateToValid(toDate, dateFormatStr))
-            {
-                Console.WriteLine(string.Format("To Date: example format ({0})", dateFormatStr));
-                Console.WriteLine("");
-
-                toDate = Console.ReadLine();
-            }
-
-            input.Date.FromDate = DateTimeUtil.ConvertStringToDateTimeFormat(dateFormatStr, fromDate);
-            input.Date.ToDate = DateTimeUtil.ConvertStringToDateTimeFormat(dateFormatStr, toDate);
+            input.FilesPath = !string.IsNullOrWhiteSpace(inputFolderPath) ? inputFolderPath : null;
 
             return input;
         }
@@ -192,6 +219,23 @@ namespace SalesConsoleApp.UserInterface
             return input;
         }
 
+        private static bool IsDateFromBeforeDateAfter(DateTime? from, DateTime? to)
+        {
+            if (!from.HasValue || !to.HasValue)
+            {
+                Console.WriteLine("FromDate or ToDate is empty!");
+                return false;
+            }
+
+            if (from >= to)
+            {
+                Console.WriteLine("FromDate must have a date value before ToDate's date value");
+                return false;
+            }
+
+            return true;
+        }
+
         private static bool IsYearValid(string? year, SortedSet<string> yearsAvailable)
         {
             if (string.Empty.Equals(year))
@@ -243,6 +287,11 @@ namespace SalesConsoleApp.UserInterface
                 return true;
             }
 
+            if (string.IsNullOrEmpty(inputFolderPath))
+            {
+                return false;
+            }
+
             int i = 0;
             bool isNum = int.TryParse(inputFolderPath, out i);
             if (isNum)
@@ -251,9 +300,15 @@ namespace SalesConsoleApp.UserInterface
                 return false;
             }
 
-            if (!string.IsNullOrEmpty(inputFolderPath))
+            try
             {
+                FileUtil.GetFilesFromPath(inputFolderPath, FileUtil.FILES_EXTENTION_COMMA_SEPARATED);
                 return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
             }
 
             return false;

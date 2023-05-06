@@ -16,19 +16,11 @@ namespace SalesConsoleApp.DTO.Csv
     {
         public SalesDTOMap()
         {
-            //Map(m => m.Date)
-            //    .TypeConverter<CsvHelper.TypeConversion.DateOnlyConverter>()
-            //    .TypeConverterOption.Format("dd/MM/yyyy");
-
-            //Map(m => m.Amount)
-            //   .TypeConverter<CsvHelper.TypeConversion.DecimalConverter>()
-            // .TypeConverterOption.Format("{0:0.00}");
-
             Map(m => m.Date).Convert(NullDateTimeParser);
 
             Map(m => m.Amount).Convert(NullDecimalParser);
 
-            Map(m => m.Redundant).Convert(NullStringParser);
+            Map(m => m.Redundant).Convert(NullStringParser); // Used to catch any additional reduntant field-string on the same row
 
         }
 

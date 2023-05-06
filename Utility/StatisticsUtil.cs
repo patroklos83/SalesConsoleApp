@@ -1,6 +1,7 @@
 ﻿using SalesConsoleApp.DTO.Csv;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,7 +18,10 @@ namespace SalesConsoleApp.Utility
         {
             decimal sumOfDerivationAverage = sumd / count;
             decimal average = sum / count;
-            var result = Math.Sqrt((double)(sumOfDerivationAverage - (average * average)));
+            // double absoluteNumber = ((double)sumOfDerivationAverage - ((double)average * (double)average));
+
+
+            var result = Math.Sqrt(Math.Abs((double)(sumd / count - average * average)));
             return Math.Round(result, AmountUtil.AMOUNT_DECIMAL_POINTS_MAX);
         }
 
@@ -27,15 +31,37 @@ namespace SalesConsoleApp.Utility
             return Math.Round(average, AmountUtil.AMOUNT_DECIMAL_POINTS_MAX);
         }
 
-        internal static double standardDeviation(IEnumerable<double> sequence)
+        internal static double standardDeviation(IEnumerable<double> sequence, int? count = null)
         {
             double result = 0;
 
             if (sequence.Any())
             {
-                double average = sequence.Average();
+                int c = count.HasValue ? count.Value : sequence.Count();
+                double average = sequence.Sum() / c;//sequence.Average();
                 double sum = sequence.Sum(d => Math.Pow(d - average, 2));
-                result = Math.Sqrt((sum) / sequence.Count());
+                result = Math.Sqrt((sum) / c);
+            }
+            return result;
+        }
+
+        public class Test
+        {
+            public DateTime date { get; set; }
+            public Double amount { get; set; }
+        }
+
+
+        internal static double StandardDeviation2(IEnumerable<Test> sequence)
+        {
+            double result = 0;
+
+            if (sequence.Any())
+            {
+                int c = sequence.Count();
+                double average = sequence.Select(s => s.amount).Sum() / c;//sequence.Average();
+                double sum = sequence.Select(s => s.amount).Sum(d => Math.Pow(d - average, 2));
+                result = Math.Sqrt((sum) / c);
             }
             return result;
         }

@@ -20,8 +20,13 @@ namespace SalesConsoleApp
 {
     class Program
     {
-        public const string dateFormat = "dd/MM/yyyy";
-
+        /// <summary>
+        /// This console application reads sales .csv files
+        /// provided the csv file row Dates are sorted by desc/asc order
+        /// No Arrays or Lists are used to calculate the statistics
+        /// Files has to be ordered as well. see example files  [/ImportFiles]
+        /// </summary>
+        /// <param name="args"></param>
         static void Main(string[] args)
         {
             Console.OutputEncoding = Encoding.UTF8;
@@ -37,7 +42,7 @@ namespace SalesConsoleApp
             {
                 var userInput = ConsoleInput.GetUserInput();
                 SalesImportCsvResultDTO result = ReadSalesProcess.Read(userInput);
-                ConsoleOutput.DisplayStatistics(result);
+                ConsoleOutput.DisplayStatistics(userInput, result);
                 userInput = ConsoleInput.GetYearRange(userInput, result);
                 ConsoleOutput.DisplayStatisticsForYearRange(userInput, result);
             }
@@ -49,6 +54,14 @@ namespace SalesConsoleApp
                 Console.WriteLine();
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
+
+                if (ex is ArgumentException)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("Please retry ...");
+                    Console.WriteLine();
+                    Main(new string[0]);
+                }
             }
         }
     }

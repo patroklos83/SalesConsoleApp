@@ -21,12 +21,6 @@ namespace SalesConsoleApp.Utility
 
         internal const int AMOUNT_DECIMAL_POINTS_MAX = 6;
 
-        //internal const string REGX_AMOUNT_FORMAT = @"^[1-9]+[0-9]*$";
-        //internal const string REGX_AMOUNT_FORMAT2 = @"^(([1-9]\d*(\d+)*(\.\d{1,4})?)|(0\.\d{1,4})|0)$";
-        //internal const string REGX_AMOUNT_FORMAT3 = @"^(([1-9]\d*(\,\d+)*(\.\d{1,4})?)|(0\.\d{1,4})|0)$";
-        //internal const string REGX_AMOUNT_FORMAT4 = @"^(([1-9]\d*(\d+)*(\,\d{1,4})?)|(0\.\d{1,4})|0)$";
-
-
         internal const string REGX_AMOUNT_FORMAT = @"^{currenySymbol}(([1-9]\d*(\{thousandsComma}\d+)*(\{decimalPointSeparator}\d{{decPoints}})?)|(0\.\d{1,4})|0)$";
 
         internal static bool ValidateAmountFormat(string decimalFormat, string amountString, AmountFormatDTO formatDTO = null)
