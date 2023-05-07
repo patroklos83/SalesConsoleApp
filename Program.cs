@@ -22,12 +22,12 @@ namespace SalesConsoleApp
     {
         /// <summary>
         /// This console application reads sales .csv files.
-        /// the csv file sales have to be sorted by Dates desc/asc order
+        /// The csv file sales have to be sorted by Dates desc/asc order
         /// No Arrays or Lists are used to calculate the statistics
         /// Files has to be ordered as well and have specific continuity.
         /// see example files  [/ImportFiles]
-        /// The main ideas is to Avoid large Lists [with millions of elements]
-        /// which will result in MBS/GBs of memory used.In addition, Avoid as well
+        /// The main idea is to avoid having large Lists [with millions of elements]
+        /// which will result in MBS/GBs of memory used.In addition, avoid as well
         /// O(n) time complexity for iterating through the large Lists/arrays.
         /// 
         /// see example of using a list of type decimal for storing 20 years
