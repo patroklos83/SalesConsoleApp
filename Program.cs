@@ -21,10 +21,21 @@ namespace SalesConsoleApp
     class Program
     {
         /// <summary>
-        /// This console application reads sales .csv files
-        /// provided the csv file row Dates are sorted by desc/asc order
+        /// This console application reads sales .csv files.
+        /// the csv file sales have to be sorted by Dates desc/asc order
         /// No Arrays or Lists are used to calculate the statistics
-        /// Files has to be ordered as well. see example files  [/ImportFiles]
+        /// Files has to be ordered as well and have specific continuity.
+        /// see example files  [/ImportFiles]
+        /// The main ideas is to Avoid large Lists [with millions of elements]
+        /// which will result in MBS/GBs of memory used.In addition, Avoid as well
+        /// O(n) time complexity for iterating through the large Lists/arrays.
+        /// 
+        /// see example of using a list of type decimal for storing 20 years
+        /// of sales record in memory.
+        /// 
+        /// 20 years * 365 days * 300 sales/day = 2,190,000 sales records
+        /// 2,190,000 sales records * 16 bytes (decimal type) = 35,040,000 bytes
+        /// 35,040,000 bytes = 35.04 Mbytes
         /// </summary>
         /// <param name="args"></param>
         static void Main(string[] args)
@@ -34,8 +45,6 @@ namespace SalesConsoleApp
             Console.WriteLine("Hello, This is the Sales statistics console app! ");
             Console.WriteLine("------------------------------------------------ ");
             Console.WriteLine();
-
-            //string importPath = @"C:\Users\patro\OneDrive\Desktop\sales"; //args[0];
 
             try
             {

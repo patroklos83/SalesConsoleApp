@@ -48,15 +48,10 @@ namespace SalesConsoleApp.UserInterface
 
             Console.WriteLine();
             Console.WriteLine("Standard deviation of earnings [{0}]", fromToDate);
-            Console.WriteLine("=======================================================");
-            Console.WriteLine();
-
             double standardDeviation = StatisticsUtil.GetStandardDeviation(salesImportCscResult.Metrics.sumd, salesImportCscResult.Metrics.sum, salesImportCscResult.Metrics.count);
 
             string rangeOfYears = string.Join("/", salesImportCscResult.StatisticPerYear.Keys);
-            Console.WriteLine(string.Format("Standard Deviation = {0} [For years: {1}] [Unique Dates Count: {2}]", standardDeviation, rangeOfYears, salesImportCscResult.Metrics.count));
-            //TEST!!!!!
-            Console.WriteLine("Standard Deviation TEST!!!!! = {0} [For years: {1}]", StatisticsUtil.StandardDeviation2(salesImportCscResult.records2), rangeOfYears);
+            Console.WriteLine(string.Format("Standard Deviation = {0} [For years: {1}] [Unique Dates Count: {2}]", standardDeviation, rangeOfYears, salesImportCscResult.Metrics.count));           
         }
 
         private static void DisplayStandardDeviationPerYear(SalesImportCsvResultDTO salesImportCscResult)
@@ -72,9 +67,6 @@ namespace SalesConsoleApp.UserInterface
                 var statistics = yearEntry.Value;
                 standardDeviation = StatisticsUtil.GetStandardDeviation(statistics.Metrics.sumd, statistics.Metrics.sum, statistics.Metrics.count);
                 Console.WriteLine(string.Format("Standard Deviation = {0} [For year: {1}] [Unique Dates Count: {2}]", standardDeviation, year, statistics.Metrics.count));
-
-                //TEST!!!!!
-                Console.WriteLine("Standard Deviation TEST!!!!! = {0} [For year: {1}]", StatisticsUtil.StandardDeviation2(statistics.records2), year);
             }
         }
 
@@ -119,9 +111,6 @@ namespace SalesConsoleApp.UserInterface
                         salesImportCscResult.StatisticSpecificDateRange.Metrics.sum,
                         salesImportCscResult.StatisticSpecificDateRange.Metrics.count);
                 Console.WriteLine("Standard Deviation = {0}", standardDeviation);
-                
-                //TEST!!!!!
-                Console.WriteLine("Standard Deviation TEST!!!!! = {0}", StatisticsUtil.StandardDeviation2(salesImportCscResult.StatisticSpecificDateRange.records2));
             }
             else
             {
@@ -168,8 +157,6 @@ namespace SalesConsoleApp.UserInterface
                 sumd += statistics.Metrics.sumd;
                 sum += statistics.Metrics.sum;
 
-                record.AddRange(statistics.records2.Select(i => i.amount));
-
                 countEntries++;
             }
 
@@ -179,9 +166,6 @@ namespace SalesConsoleApp.UserInterface
 
             double sd = StatisticsUtil.GetStandardDeviation(sumd, sum, count);
             Console.WriteLine("Standard Deviation of earnings = {0}", sd);
-
-             double sd1 = StatisticsUtil.standardDeviation(record, count);
-            Console.WriteLine("Standard Deviation = {0} // test!!!!!", sd1);
 
             double average = (double)StatisticsUtil.GetAverage(sum, count);
             Console.WriteLine("Average Sales Earnings = {0}", average);

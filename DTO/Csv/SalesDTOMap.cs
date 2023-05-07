@@ -21,7 +21,6 @@ namespace SalesConsoleApp.DTO.Csv
             Map(m => m.Amount).Convert(NullDecimalParser);
 
             Map(m => m.Redundant).Convert(NullStringParser); // Used to catch any additional reduntant field-string on the same row
-
         }
 
         private DateTime? NullDateTimeParser(ConvertFromStringArgs arg)
