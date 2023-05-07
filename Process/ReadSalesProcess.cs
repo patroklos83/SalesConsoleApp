@@ -15,13 +15,12 @@ using SalesConsoleApp.Enums;
 using System.Collections.Concurrent;
 using static SalesConsoleApp.Utility.StatisticsUtil;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Diagnostics;
 
 namespace SalesConsoleApp.Process
 {
     internal class ReadSalesProcess
     {
-        private static readonly object tlock = new object();
-
         internal static string DateFormat = DateTimeUtil.DATE_FORMAT;
 
         internal static AmountFormatDTO AmountFormat = new AmountFormatDTO
@@ -32,6 +31,8 @@ namespace SalesConsoleApp.Process
         };
 
         private static SalesDTO previousSalesRecord = new SalesDTO { Amount = 0 };
+
+        private static int csvRowCounter = 1;
 
         internal static SalesImportCsvResultDTO Read(SalesImportCsvInputDTO input)
         {
@@ -80,7 +81,8 @@ namespace SalesConsoleApp.Process
                 }
             }
 
-            salesImportCsvResultDTO = GollectLastRecord(input, salesImportCsvResultDTO);
+            // salesImportCsvResultDTO = GollectLastRecord(input, salesImportCsvResultDTO);
+            CollectStatistics(previousSalesRecord, input, true, ref salesImportCsvResultDTO);
             return salesImportCsvResultDTO;
         }
         private static SalesImportCsvResultDTO ReadCSV(string importCsvFile, SalesImportCsvInputDTO input, ref SalesImportCsvResultDTO salesImportCsvResultDTO)
@@ -105,11 +107,13 @@ namespace SalesConsoleApp.Process
                     while (csv.Read())
                     {
                         record = CollectRecord(csv, importCsvFile);
-                        if (csv.Context.Parser.RawRow == 1)
+                        if (csvRowCounter== 1)
                         {
+                            // Init temporary variable previousSalesRecord on first record from all files
                             previousSalesRecord.Date = record.Date;
                         }
-                        CollectStatistics(record, input, ref salesImportCsvResultDTO);
+                        CollectStatistics(record, input, false, ref salesImportCsvResultDTO);
+                        csvRowCounter++;
                     }
 
                     Console.WriteLine(string.Format("Completed reading import file {0}", importCsvFile));
@@ -144,6 +148,43 @@ namespace SalesConsoleApp.Process
             return record;
         }
 
+
+        /// <summary>
+        /// Get last row from the last csv file read
+        /// </summary>
+        /// <param name="salesImportCsvInputDTO"></param>
+        /// <param name="salesImportCsvResultDTO"></param>
+        /// <returns></returns>
+        private static SalesImportCsvResultDTO GollectLastRecord(SalesImportCsvInputDTO salesImportCsvInputDTO, SalesImportCsvResultDTO salesImportCsvResultDTO)
+        {
+            decimal sum = previousSalesRecord.Amount.Value;
+            decimal sumd = (decimal)Math.Pow((double)previousSalesRecord.Amount.Value, 2);
+
+            // Collect statistics for total rows read
+            salesImportCsvResultDTO.Metrics.count++;
+            salesImportCsvResultDTO.Metrics.sum += sum;
+            salesImportCsvResultDTO.Metrics.sumd += sumd;
+            salesImportCsvResultDTO.Metrics = CollectMinMaxDateFound(previousSalesRecord.Date.Value, salesImportCsvResultDTO.Metrics);
+
+            // Collect statistics per year
+            UpdateStatisticsPerYear(new SalesDTO { Amount = 0, Date = previousSalesRecord.Date },
+                previousSalesRecord.Date.Value,
+                sum,
+                sumd,
+                ref salesImportCsvResultDTO);
+
+            // Collect statistics for a range of dates [given input by the user]
+            if (salesImportCsvInputDTO.Date.IsExportResultsFromToDate)
+            {
+                UpdateStatisticsPerDateRange(sum, sumd,
+                    salesImportCsvInputDTO.Date.FromDate.Value,
+                    salesImportCsvInputDTO.Date.ToDate.Value,
+                    previousSalesRecord.Date.Value, ref salesImportCsvResultDTO);
+            }
+
+            return salesImportCsvResultDTO;
+        }
+
         private static void ValidateCsvRow(SalesDTO? record)
         {
             if (record == null)
@@ -172,7 +213,7 @@ namespace SalesConsoleApp.Process
         /// <returns></returns>
         private static bool IsDateAlreadyIterated(SalesDTO? record)
         {
-            if (IsFirstRow())
+            if (!previousSalesRecord.Date.HasValue)
                 return false;
             else if (record.Date.HasValue && record.Date.Value == previousSalesRecord.Date.Value)
                 return true;
@@ -180,16 +221,20 @@ namespace SalesConsoleApp.Process
             return false;
         }
 
-        private static bool IsFirstRow()
-        {
-            if (!previousSalesRecord.Date.HasValue)
-                return true;
+        //private static bool IsFirstRow()
+        //{
+        //    if (!previousSalesRecord.Date.HasValue)
+        //        return true;
 
-            return false;
-        }
+        //    return false;
+        //}
 
 
-        private static void CollectStatistics(SalesDTO? record, SalesImportCsvInputDTO input, ref SalesImportCsvResultDTO salesImportCsvResultDTO)
+        private static void CollectStatistics(
+            SalesDTO? record,
+            SalesImportCsvInputDTO input,
+            bool isLastRecord,
+            ref SalesImportCsvResultDTO salesImportCsvResultDTO)
         {
             if (salesImportCsvResultDTO.Metrics == null)
                 salesImportCsvResultDTO.Metrics = new Metrics();
@@ -198,7 +243,7 @@ namespace SalesConsoleApp.Process
             var year = currDate.Year;
 
             bool isDateAlreadyIterated = IsDateAlreadyIterated(record);
-            if (!isDateAlreadyIterated)
+            if (!isDateAlreadyIterated || isLastRecord)
             {
                 // Collect statistics for total rows read
                 decimal sum = previousSalesRecord.Amount.Value;
@@ -209,16 +254,20 @@ namespace SalesConsoleApp.Process
                 salesImportCsvResultDTO.Metrics.sumd += sumd;
 
                 // Store minimum date found in all csv files
-                CollectMinMaxDateFound(previousSalesRecord.Date.Value, ref salesImportCsvResultDTO);
+                salesImportCsvResultDTO.Metrics = CollectMinMaxDateFound(previousSalesRecord.Date.Value, salesImportCsvResultDTO.Metrics);
 
                 // Collect statistics per year
-                UpdateStatisticsPerYear(record, previousSalesRecord.Date.Value, sum, sumd, ref salesImportCsvResultDTO);
+                var recordTemp = isLastRecord? new SalesDTO { Amount = 0, Date = previousSalesRecord.Date } : record;
+                UpdateStatisticsPerYear(recordTemp, previousSalesRecord.Date.Value, sum, sumd, ref salesImportCsvResultDTO);
 
                 // Collect statistics for a range of dates [given input by the user]
                 if (input.Date.IsExportResultsFromToDate)
                 {
-                    UpdateStatisticsPerDateRange(sum, sumd, input.Date.FromDate.Value, input.Date.ToDate.Value,
-                        previousSalesRecord.Date.Value, ref salesImportCsvResultDTO);
+                    UpdateStatisticsPerDateRange(
+                        sum, sumd, 
+                        input.Date.FromDate.Value, input.Date.ToDate.Value,
+                        previousSalesRecord.Date.Value, 
+                        ref salesImportCsvResultDTO);
                 }
 
                 previousSalesRecord.Amount = 0;
@@ -248,65 +297,29 @@ namespace SalesConsoleApp.Process
             }
         }
 
-        /// <summary>
-        /// Get last row from the last csv file read
-        /// </summary>
-        /// <param name="salesImportCsvInputDTO"></param>
-        /// <param name="salesImportCsvResultDTO"></param>
-        /// <returns></returns>
-        private static SalesImportCsvResultDTO GollectLastRecord(SalesImportCsvInputDTO salesImportCsvInputDTO, SalesImportCsvResultDTO salesImportCsvResultDTO)
-        {
-            decimal sum = previousSalesRecord.Amount.Value;
-            decimal sumd = (decimal)Math.Pow((double)previousSalesRecord.Amount.Value, 2);
-
-            // Collect statistics for total rows read
-            salesImportCsvResultDTO.Metrics.count++;
-            salesImportCsvResultDTO.Metrics.sum += sum;
-            salesImportCsvResultDTO.Metrics.sumd += sumd;
-
-            CollectMinMaxDateFound(previousSalesRecord.Date.Value, ref salesImportCsvResultDTO);
-
-            // Collect statistics per year
-            UpdateStatisticsPerYear(new SalesDTO { Amount = 0, Date = previousSalesRecord.Date },
-                previousSalesRecord.Date.Value,
-                sum,
-                sumd,
-                ref salesImportCsvResultDTO);
-
-            // Collect statistics for a range of dates [given input by the user]
-            if (salesImportCsvInputDTO.Date.IsExportResultsFromToDate)
-            {
-                UpdateStatisticsPerDateRange(sum, sumd,
-                    salesImportCsvInputDTO.Date.FromDate.Value,
-                    salesImportCsvInputDTO.Date.ToDate.Value,
-                    previousSalesRecord.Date.Value, ref salesImportCsvResultDTO);
-            }
-
-            return salesImportCsvResultDTO;
-        }
-
-
-        private static void CollectMinMaxDateFound(DateTime date, ref SalesImportCsvResultDTO salesImportCsvResultDTO)
+        private static Metrics CollectMinMaxDateFound(DateTime date, Metrics metrics)
         {
             // Store minumimum date found in all csv files
-            if (!salesImportCsvResultDTO.MinDateFound.HasValue)
+            if (!metrics.MinDateFound.HasValue)
             {
-                salesImportCsvResultDTO.MinDateFound = date;
+                metrics.MinDateFound = date;
             }
-            else if (salesImportCsvResultDTO.MinDateFound > date)
+            else if (metrics.MinDateFound > date)
             {
-                salesImportCsvResultDTO.MinDateFound = date;
+                metrics.MinDateFound = date;
             }
 
             // Store maximum date found in all csv files
-            if (!salesImportCsvResultDTO.MaxDateFound.HasValue)
+            if (!metrics.MaxDateFound.HasValue)
             {
-                salesImportCsvResultDTO.MaxDateFound = date;
+                metrics.MaxDateFound = date;
             }
-            else if (salesImportCsvResultDTO.MaxDateFound < date)
+            else if (metrics.MaxDateFound < date)
             {
-                salesImportCsvResultDTO.MaxDateFound = date;
+                metrics.MaxDateFound = date;
             }
+
+            return metrics;
         }
 
         private static void UpdateStatisticsPerYear(SalesDTO record, DateTime date, decimal sum, decimal sumd, ref SalesImportCsvResultDTO salesImportCsvResultDTO)
@@ -348,8 +361,8 @@ namespace SalesConsoleApp.Process
                 existingStatisticPerYear.Metrics.count++;
                 existingStatisticPerYear.Metrics.sum += sum;
                 existingStatisticPerYear.Metrics.sumd += sumd;
-
-                existingStatisticPerYear = GetMinMaxDatePerYear(existingStatisticPerYear, date);
+                existingStatisticPerYear.Metrics = CollectMinMaxDateFound(previousSalesRecord.Date.Value, existingStatisticPerYear.Metrics);
+                //existingStatisticPerYear = GetMinMaxDatePerYear(existingStatisticPerYear, date);
 
                 //test!!!!!!
                 if (existingStatisticPerYear.records2 == null)
@@ -374,35 +387,36 @@ namespace SalesConsoleApp.Process
             }
             else
             {
-                statisticPerYear = GetMinMaxDatePerYear(statisticPerYear, date);
+                statisticPerYear.Metrics = CollectMinMaxDateFound(previousSalesRecord.Date.Value, statisticPerYear.Metrics);
+                // statisticPerYear = GetMinMaxDatePerYear(statisticPerYear, date);
                 salesImportCsvResultDTO.StatisticPerYear.TryAdd(year, statisticPerYear);
             }
         }
 
-        private static StatisticPerYearDTO GetMinMaxDatePerYear(StatisticPerYearDTO statisticPerYear, DateTime date)
-        {
-            // Store minumimum date found in all csv files
-            if (!statisticPerYear.MinDateFound.HasValue)
-            {
-                statisticPerYear.MinDateFound = date;
-            }
-            else if (statisticPerYear.MinDateFound > date)
-            {
-                statisticPerYear.MinDateFound = date;
-            }
+        //private static StatisticPerYearDTO GetMinMaxDatePerYear(StatisticPerYearDTO statisticPerYear, DateTime date)
+        //{
+        //    // Store minumimum date found in all csv files
+        //    if (!statisticPerYear.MinDateFound.HasValue)
+        //    {
+        //        statisticPerYear.MinDateFound = date;
+        //    }
+        //    else if (statisticPerYear.MinDateFound > date)
+        //    {
+        //        statisticPerYear.MinDateFound = date;
+        //    }
 
-            // Store maximum date found in all csv files
-            if (!statisticPerYear.MaxDateFound.HasValue)
-            {
-                statisticPerYear.MaxDateFound = date;
-            }
-            else if (statisticPerYear.MaxDateFound < date)
-            {
-                statisticPerYear.MaxDateFound = date;
-            }
+        //    // Store maximum date found in all csv files
+        //    if (!statisticPerYear.MaxDateFound.HasValue)
+        //    {
+        //        statisticPerYear.MaxDateFound = date;
+        //    }
+        //    else if (statisticPerYear.MaxDateFound < date)
+        //    {
+        //        statisticPerYear.MaxDateFound = date;
+        //    }
 
-            return statisticPerYear;
-        }
+        //    return statisticPerYear;
+        //}
 
         private static void UpdateStatisticsPerDateRange(
         decimal sum,
@@ -420,25 +434,26 @@ namespace SalesConsoleApp.Process
 
             if (from <= date && to >= date)
             {
-                // Store minimum date found in all csv files
-                if (!salesImportCsvResultDTO.StatisticSpecificDateRange.MinDateFound.HasValue)
-                {
-                    salesImportCsvResultDTO.StatisticSpecificDateRange.MinDateFound = date;
-                }
-                else if (salesImportCsvResultDTO.StatisticSpecificDateRange.MinDateFound > date)
-                {
-                    salesImportCsvResultDTO.StatisticSpecificDateRange.MinDateFound = date;
-                }
+                salesImportCsvResultDTO.StatisticSpecificDateRange.Metrics = CollectMinMaxDateFound(date, salesImportCsvResultDTO.StatisticSpecificDateRange.Metrics);
+                //// Store minimum date found in all csv files
+                //if (!salesImportCsvResultDTO.StatisticSpecificDateRange.MinDateFound.HasValue)
+                //{
+                //    salesImportCsvResultDTO.StatisticSpecificDateRange.MinDateFound = date;
+                //}
+                //else if (salesImportCsvResultDTO.StatisticSpecificDateRange.MinDateFound > date)
+                //{
+                //    salesImportCsvResultDTO.StatisticSpecificDateRange.MinDateFound = date;
+                //}
 
-                // Store maximum date found in all csv files
-                if (!salesImportCsvResultDTO.StatisticSpecificDateRange.MaxDateFound.HasValue)
-                {
-                    salesImportCsvResultDTO.StatisticSpecificDateRange.MaxDateFound = date;
-                }
-                else if (salesImportCsvResultDTO.StatisticSpecificDateRange.MaxDateFound < date)
-                {
-                    salesImportCsvResultDTO.StatisticSpecificDateRange.MaxDateFound = date;
-                }
+                //// Store maximum date found in all csv files
+                //if (!salesImportCsvResultDTO.StatisticSpecificDateRange.MaxDateFound.HasValue)
+                //{
+                //    salesImportCsvResultDTO.StatisticSpecificDateRange.MaxDateFound = date;
+                //}
+                //else if (salesImportCsvResultDTO.StatisticSpecificDateRange.MaxDateFound < date)
+                //{
+                //    salesImportCsvResultDTO.StatisticSpecificDateRange.MaxDateFound = date;
+                //}
 
                 salesImportCsvResultDTO.StatisticSpecificDateRange.Metrics.count++;
                 salesImportCsvResultDTO.StatisticSpecificDateRange.Metrics.sum += sum;

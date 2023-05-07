@@ -37,7 +37,6 @@ namespace SalesConsoleApp
 
             //string importPath = @"C:\Users\patro\OneDrive\Desktop\sales"; //args[0];
 
-            //https://www.csharp-examples.net/string-format-double/#:~:text=For%20two%20decimal%20places%20use,the%20number%20will%20be%20rounded.
             try
             {
                 var userInput = ConsoleInput.GetUserInput();

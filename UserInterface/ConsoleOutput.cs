@@ -39,11 +39,11 @@ namespace SalesConsoleApp.UserInterface
         private static void DisplayTotalStandardDeviation(SalesImportCsvResultDTO salesImportCscResult)
         {
             string fromToDate = string.Empty;
-            if (salesImportCscResult.MinDateFound.HasValue && salesImportCscResult.MaxDateFound.HasValue)
+            if (salesImportCscResult.Metrics.MinDateFound.HasValue && salesImportCscResult.Metrics.MaxDateFound.HasValue)
             {
                  fromToDate  = string.Format("From Date: [{0}]. To Date: [{1}]",
-                    salesImportCscResult.MinDateFound.Value.ToString(ReadSalesProcess.DateFormat),
-                    salesImportCscResult.MaxDateFound.Value.ToString(ReadSalesProcess.DateFormat));
+                    salesImportCscResult.Metrics.MinDateFound.Value.ToString(ReadSalesProcess.DateFormat),
+                    salesImportCscResult.Metrics.MaxDateFound.Value.ToString(ReadSalesProcess.DateFormat));
             }
 
             Console.WriteLine();
@@ -101,15 +101,15 @@ namespace SalesConsoleApp.UserInterface
             string userInputFromToDate = string.Format("{0} - {1}", fromDateUserInput, toDateUserInput);
 
             if (salesImportCscResult.StatisticSpecificDateRange != null
-                && salesImportCscResult.StatisticSpecificDateRange.MinDateFound.HasValue &&
-              salesImportCscResult.StatisticSpecificDateRange.MaxDateFound.HasValue)
+                && salesImportCscResult.StatisticSpecificDateRange.Metrics.MinDateFound.HasValue &&
+              salesImportCscResult.StatisticSpecificDateRange.Metrics.MaxDateFound.HasValue)
             {
                 double standardDeviation = 0;
 
                 Console.WriteLine("{0} {1} - {2} [User Date range input: {3}] [Unique Dates count: {4}]",
                     strDateRangeTitle,
-                    salesImportCscResult.StatisticSpecificDateRange.MinDateFound.Value.ToString(ReadSalesProcess.DateFormat),
-                    salesImportCscResult.StatisticSpecificDateRange.MaxDateFound.Value.ToString(ReadSalesProcess.DateFormat),
+                    salesImportCscResult.StatisticSpecificDateRange.Metrics.MinDateFound.Value.ToString(ReadSalesProcess.DateFormat),
+                    salesImportCscResult.StatisticSpecificDateRange.Metrics.MaxDateFound.Value.ToString(ReadSalesProcess.DateFormat),
                     userInputFromToDate,
                     salesImportCscResult.StatisticSpecificDateRange.Metrics.count);
 
@@ -160,9 +160,9 @@ namespace SalesConsoleApp.UserInterface
                 // Store minimum/maximum date
                 if (countEntries == 0)
                 {
-                    minDate = statistics.MinDateFound;
+                    minDate = statistics.Metrics.MinDateFound;
                 }
-                maxDate = statistics.MaxDateFound;
+                maxDate = statistics.Metrics.MaxDateFound;
 
                 count += statistics.Metrics.count;
                 sumd += statistics.Metrics.sumd;
