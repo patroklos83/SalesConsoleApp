@@ -44,7 +44,7 @@ from the /bin directory run the following command
     SalesConsoleApp.exe
 
 Step 2. Select the .csv files directory where the files to be imported are located. 
-*Note: If no directory is specified, the default will be user [bin/ImportFiles]*
+*Note: If no directory is specified, the default will be used [bin/ImportFiles]*
 
 Step 3.  Select the format of the dates in the csv files. 
 For example a date ***01/01/2001*** has a format of ***dd/MM/yyyy***. 
