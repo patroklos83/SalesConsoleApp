@@ -4,11 +4,6 @@
 
 A .Net console application for importing .csv files consisting of sales records and exporting statistics for standard deviation and averages.
 
-## Case Study
-
-A New agency requires a User friendly Interface, to view, create and edit Articles posted by the agency.
-
-
 ## Requirements
 
 For building the application you need:
@@ -24,13 +19,13 @@ The import .csv files has to be ordered based on the dates included, so the appl
 
 Sales1.csv
 
-       31/03/2020##1245.39 
-       31/03/2020##245.39 
-       31/03/2020##245.39   
-       01/04/2020##345.39 
-       01/05/2021##245.39 
-       02/05/2021##229.39   
-       03/05/2021##340.39
+    31/03/2020##1245.39 
+    31/03/2020##245.39 
+    31/03/2020##245.39   
+    01/04/2020##345.39 
+    01/05/2021##245.39 
+    02/05/2021##229.39   
+    03/05/2021##340.39
 
 Sales2.csv
 
@@ -58,7 +53,7 @@ For example a date ***01/01/2001*** has a format of ***dd/MM/yyyy***.
 ![enter image description here](/images/Capture1.PNG)
 
 Step 4. Select the format of the sales Amount. 
-For example an Amount ***200.20*** has a format of ***xxxxx.xx***, with no currency symbol as a prefix.
+For example an Amount ***200.20*** has a format of ***xxxxx.xx***, with 2 decimal points and no currency symbol as a prefix.
 
 ![enter image description here](/images/Capture2.PNG)
 
