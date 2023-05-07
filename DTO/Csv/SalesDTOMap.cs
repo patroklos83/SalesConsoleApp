@@ -31,6 +31,8 @@ namespace SalesConsoleApp.DTO.Csv
                 return null;
             else
             {
+                rawValue = rawValue.ToString().Trim();
+
                 DateTime? result = DateTimeUtil.ConvertStringToDateTimeFormat(ReadSalesProcess.DateFormat, rawValue);
 
                 if (result != null)
@@ -49,6 +51,8 @@ namespace SalesConsoleApp.DTO.Csv
                 return null;
             else
             {
+                rawValue = rawValue.ToString().Trim();
+
                 decimal? result = AmountUtil.ConvertStringToDecimalFormat(ReadSalesProcess.AmountFormat.StrAmountFormat, rawValue, ReadSalesProcess.AmountFormat);
                 if (result != null)
                     return result;
