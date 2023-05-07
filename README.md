@@ -13,7 +13,7 @@ For building the application you need:
 
 ## Running the Application on windows operating system
 
-The import .csv files has to be ordered based on the dates included, so the application can read them in sorted way.
+The import .csv files has to be ordered based on the dates included, so the application can read them in sorted way (In Ascending or Descending order)
 
 *see below example of 2 import files**
 
