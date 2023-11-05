@@ -67,4 +67,4 @@ See the Statistics !
 
 ![enter image description here](/images/Capture5.PNG)
 
-Fell free to grab a copy of this sample code, and play it yourself.
+Feel free to grab a copy of this sample code, and play it yourself.
